@@ -29,6 +29,23 @@ app.post("/api/todos", (req, res) => {
   res.status(201).json(newTodo);
 });
 
+app.patch("/api/todos/:id", (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const { done } = req.body;
+
+
+  const todo = todos.find((t) => t.id === id);
+  if (!todo) {
+    return res.status(404).json({ error: "Todo not found" });
+  }
+
+  if (typeof done === "boolean") {
+    todo.done = done;
+  }
+
+  res.json(todo);
+})
+
 app.delete("/api/todos/:id", (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -39,7 +56,8 @@ app.delete("/api/todos/:id", (req, res) => {
 
   const removedToDo = todos.filter((todo) => todo.id !== id);
   res.json({message: "Todo deleted", removedToDo})
-})
+});
+
 
 const PORT = 3000;
 

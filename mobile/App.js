@@ -4,9 +4,12 @@ import {
   ActivityIndicator,
   StyleSheet,
   FlatList,
+  Pressable,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import Constants from 'expo-constants';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+
 const debuggerHost =
   Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
 const backendHost = debuggerHost?.split(':').shift();
@@ -30,7 +33,21 @@ export default function App() {
     };
 
     getTodos();
-  }, []);
+  }, [todos]);
+
+  const handlePress = async item => {
+    const done = item.done ? false : true;
+    const todoPatch = await fetch(`${API_URL}/${item.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ done }),
+    });
+
+    await todoPatch.json();
+  };
 
   if (loading) {
     return (
@@ -42,18 +59,22 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>My todos</Text>
-      <FlatList
-        data={todos}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-          <Text style={styles.todo}>
-            {item.done ? '✅' : '⬜️'} {item.text}
-          </Text>
-        )}
-      />
-    </View>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>My todos</Text>
+        <FlatList
+          data={todos}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <Pressable onPress={() => handlePress(item)}>
+              <Text style={styles.todo}>
+                {item.done ? '✅' : '⬜️'} {item.text}
+              </Text>
+            </Pressable>
+          )}
+        />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
