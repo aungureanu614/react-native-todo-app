@@ -33,20 +33,36 @@ export default function App() {
     };
 
     getTodos();
-  }, [todos]);
+  }, []);
 
   const handlePress = async item => {
-    const done = item.done ? false : true;
-    const todoPatch = await fetch(`${API_URL}/${item.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ done }),
-    });
+    try {
+      setTodos(prevToDos =>
+        prevToDos.map(todo =>
+          todo.id === item.id ? { ...todo, done: !todo.done } : todo
+        )
+      );
+      const done = !item.done;
+      const todoPatch = await fetch(`${API_URL}/${item.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ done }),
+      });
 
-    await todoPatch.json();
+      if (!todoPatch.ok) {
+        throw new Error('Failed to update todo');
+      }
+    } catch (error) {
+      console.error('Failed to update todo:', error);
+      setTodos(prevTodos =>
+        prevTodos.map(todo =>
+          todo.id === item.id ? { ...todo, done: item.done } : todo
+        )
+      );
+    }
   };
 
   if (loading) {
