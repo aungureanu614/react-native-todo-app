@@ -6,26 +6,26 @@ app.use(cors());
 app.use(express.json());
 
 let todos = [
-  { id: 1, text: "Learn React Native", done: false },
-  { id: 2, text: "Build a Todo App", done: true },
+  { id: 1, text: "Learn React Native", done: true },
+  { id: 2, text: "Build a Todo App", done: false },
 ];
 
 app.get("/api/todos",(req, res) => {res.json(todos)});
 
 app.post("/api/todos", (req, res) => {
-  const {text} = req.body;
+  const {text, id} = req.body;
+
 
   if(!text || text.trim() === "") {
     return res.status(400).json({error: "Text is required"});
   }
 
   const newTodo = {
-    id: Date.now(),
+    id: Number(id),
     text,
     done: false
   }
 
-  todos = [...todos, newTodo];
   res.status(201).json(newTodo);
 });
 
