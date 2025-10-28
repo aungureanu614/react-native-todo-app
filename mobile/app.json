@@ -1,0 +1,8 @@
+{
+  "plugins": [
+    "expo-asset"
+  ], 
+  "expo": {
+    "newArchEnabled": true
+  }
+}
