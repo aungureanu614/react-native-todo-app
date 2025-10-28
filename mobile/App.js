@@ -6,6 +6,11 @@ import {
   FlatList,
 } from 'react-native';
 import { useEffect, useState } from 'react';
+import Constants from 'expo-constants';
+const debuggerHost =
+  Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
+const backendHost = debuggerHost?.split(':').shift();
+const API_URL = `http://${backendHost}:3000/api/todos`;
 
 export default function App() {
   const [todos, setTodos] = useState([]);
@@ -14,7 +19,7 @@ export default function App() {
   useEffect(() => {
     const getTodos = async () => {
       try {
-        const fetchTodos = await fetch('http://192.168.2.230:3000/api/todos');
+        const fetchTodos = await fetch(API_URL);
         const todos = await fetchTodos.json();
         setTodos(todos);
         setLoading(false);
