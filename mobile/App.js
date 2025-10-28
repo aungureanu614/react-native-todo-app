@@ -82,6 +82,25 @@ export default function App() {
     }
   };
 
+  const handleDelete = async item => {
+    try {
+      const todoPatch = await fetch(`${API_URL}/${item.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ item }),
+      });
+
+      const { removedToDo } = await todoPatch.json();
+      const filteredList = todos.filter(todo => todo.id !== removedToDo.id);
+      setTodos(filteredList);
+    } catch (error) {
+      console.error('Failed to delete todo:', error);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -110,11 +129,22 @@ export default function App() {
           data={todos}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => (
-            <Pressable onPress={() => handlePress(item)}>
-              <Text style={styles.todo}>
-                {item.done ? '✅' : '⬜️'} {item.text}
-              </Text>
-            </Pressable>
+            <View style={styles.todoRow}>
+              <Pressable
+                style={styles.todoContent}
+                onPress={() => handlePress(item)}
+              >
+                <Text style={styles.todo}>
+                  {item.done ? '✅' : '⬜️'} {item.text}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.deleteButton}
+                onPress={() => handleDelete(item)}
+              >
+                <Text style={styles.deleteText}>✕</Text>
+              </Pressable>
+            </View>
           )}
         />
       </SafeAreaView>
@@ -155,5 +185,31 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  todoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginVertical: 4,
+  },
+  todoContent: {
+    flex: 1,
+  },
+  deleteButton: {
+    backgroundColor: '#ff4757',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  deleteText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

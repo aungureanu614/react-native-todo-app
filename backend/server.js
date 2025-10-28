@@ -54,7 +54,7 @@ app.delete("/api/todos/:id", (req, res) => {
     return res.status(404).json({error: "Todo not found"});
   }
 
-  const removedToDo = todos.filter((todo) => todo.id !== id);
+  const removedToDo = todos.find((todo) => todo.id === id);
   res.json({message: "Todo deleted", removedToDo})
 });
 
