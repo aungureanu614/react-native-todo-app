@@ -1,16 +1,15 @@
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  TextInput,
-  Button,
-} from 'react-native';
-import { useEffect, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
 import Constants from 'expo-constants';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import { TodoListScreen } from './screens/TodoListScreen';
+import TodoDetailsScreen from './screens/TodoDetailsScreen';
+
+const Stack = createNativeStackNavigator();
 
 const debuggerHost =
   Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
@@ -25,47 +24,20 @@ export default function App() {
   useEffect(() => {
     const getTodos = async () => {
       try {
-        const fetchTodos = await fetch(API_URL);
-        const todos = await fetchTodos.json();
-        setTodos(todos);
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        setTodos(data);
+      } finally {
         setLoading(false);
-      } catch (error) {
-        setLoading(false);
-        return error;
       }
     };
-
     getTodos();
   }, []);
-
-  const onChangeText = text => {
-    setText(text);
-  };
-
-  const onSubmit = async () => {
-    try {
-      const todoObject = { id: todos.length + 1, text, done: false };
-      const todoPost = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(todoObject),
-      });
-
-      const newTodo = await todoPost.json();
-      setTodos(prevTodos => [...prevTodos, newTodo]);
-      setText('');
-    } catch (error) {
-      console.log('error?', error);
-    }
-  };
 
   const handlePress = async item => {
     try {
       const done = !item.done;
-      const todoPatch = await fetch(`${API_URL}/${item.id}`, {
+      await fetch(`${API_URL}/${item.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +56,7 @@ export default function App() {
 
   const handleDelete = async item => {
     try {
-      const todoPatch = await fetch(`${API_URL}/${item.id}`, {
+      await fetch(`${API_URL}/${item.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -93,17 +65,55 @@ export default function App() {
         body: JSON.stringify({ item }),
       });
 
-      const { removedToDo } = await todoPatch.json();
-      const filteredList = todos.filter(todo => todo.id !== removedToDo.id);
+      const filteredList = todos.filter(todo => todo.id !== item.id);
       setTodos(filteredList);
     } catch (error) {
       console.error('Failed to delete todo:', error);
     }
   };
 
+  const onSubmit = async () => {
+    const todoObject = { id: todos.length + 1, text, done: false };
+
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(todoObject),
+    });
+
+    const newTodo = await res.json();
+    setTodos(prev => [...prev, newTodo]);
+    setText('');
+  };
+
+  const saveUpdate = async item => {
+    try {
+      await fetch(`${API_URL}/${item.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(item),
+      });
+    } catch (error) {
+      console.error('Failed to save updated todo:', error);
+    }
+  };
+
+  const updateTodoText = useCallback((id, nextText, done) => {
+    setTodos(prev =>
+      prev.map(t => (t.id === id ? { ...t, text: nextText } : t))
+    );
+    saveUpdate({ id, text: nextText, done });
+  }, []);
+
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" />
         <Text>Loading todos...</Text>
       </View>
@@ -112,104 +122,31 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>My todos</Text>
-        <View style={styles.row}>
-          <TextInput
-            placeholder="Enter a new todo"
-            style={styles.input}
-            onChangeText={onChangeText}
-            value={text}
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen name="Todos" options={{ title: 'Todos' }}>
+            {props => (
+              <TodoListScreen
+                {...props}
+                todos={todos}
+                text={text}
+                setText={setText}
+                onSubmit={onSubmit}
+                handleDelete={handleDelete}
+                handlePress={handlePress}
+                onSave={updateTodoText}
+              />
+            )}
+          </Stack.Screen>
+
+          <Stack.Screen
+            name="TodoDetails"
+            component={TodoDetailsScreen}
+            initialParams={{}}
+            options={{ title: 'Todo Details' }}
           />
-          <Pressable style={styles.button} onPress={onSubmit}>
-            <Text style={styles.buttonText}>Add Todo</Text>
-          </Pressable>
-        </View>
-        <FlatList
-          data={todos}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.todoRow}>
-              <Pressable
-                style={styles.todoContent}
-                onPress={() => handlePress(item)}
-              >
-                <Text style={styles.todo}>
-                  {item.done ? '✅' : '⬜️'} {item.text}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={styles.deleteButton}
-                onPress={() => handleDelete(item)}
-              >
-                <Text style={styles.deleteText}>✕</Text>
-              </Pressable>
-            </View>
-          )}
-        />
-      </SafeAreaView>
+        </Stack.Navigator>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, marginTop: 50 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-  todo: { fontSize: 18, marginVertical: 5 },
-  input: {
-    flex: 1,
-    height: 48,
-    margin: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    borderRadius: 10,
-    fontSize: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginRight: 12,
-    minWidth: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  todoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginVertical: 4,
-  },
-  todoContent: {
-    flex: 1,
-  },
-  deleteButton: {
-    backgroundColor: '#ff4757',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 12,
-  },
-  deleteText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
