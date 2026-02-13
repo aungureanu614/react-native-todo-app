@@ -6,13 +6,13 @@ import {
   useState,
 } from 'react';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TodoContext = createContext(null);
 const debuggerHost =
   Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
 const backendHost = debuggerHost?.split(':').shift();
 const API_URL = `http://${backendHost}:3000/api/todos`;
-console.log('API_URL:', API_URL);
 
 export function TodoProvider({ children }) {
   const [todos, setTodos] = useState([]);
@@ -22,9 +22,21 @@ export function TodoProvider({ children }) {
   useEffect(() => {
     const getTodos = async () => {
       try {
+        const stored = await AsyncStorage.getItem('@todos');
+        if (stored) {
+          const parsedStored = JSON.parse(stored);
+          setTodos(parsedStored);
+        }
         const res = await fetch(API_URL);
-        const data = await res.json();
-        setTodos(data);
+        const serverData = await res.json();
+        setTodos(serverData);
+        await AsyncStorage.setItem('@todos', JSON.stringify(serverData));
+      } catch (error) {
+        console.error('Failed to load todos:', error);
+        const stored = await AsyncStorage.getItem('@todos');
+        if (stored) {
+          setTodos(JSON.parse(stored));
+        }
       } finally {
         setLoading(false);
       }
@@ -44,9 +56,12 @@ export function TodoProvider({ children }) {
         body: JSON.stringify({ done }),
       });
 
-      setTodos(prevTodos =>
-        prevTodos.map(todo => (todo.id === item.id ? { ...todo, done } : todo))
+      const updatedTodos = todos.map(todo =>
+        todo.id === item.id ? { ...todo, done } : todo
       );
+      setTodos(updatedTodos);
+
+      await AsyncStorage.setItem('@todos', JSON.stringify(updatedTodos));
     } catch (error) {
       console.error('Failed to update todo:', error);
     }
@@ -65,6 +80,7 @@ export function TodoProvider({ children }) {
 
       const filteredList = todos.filter(todo => todo.id !== item.id);
       setTodos(filteredList);
+      await AsyncStorage.setItem('@todos', JSON.stringify(filteredList));
     } catch (error) {
       console.error('Failed to delete todo:', error);
     }
@@ -76,7 +92,6 @@ export function TodoProvider({ children }) {
       return;
     }
 
-    console.log('Adding todo:', text);
     const todoObject = { id: Date.now(), text, done: false };
 
     try {
@@ -96,8 +111,9 @@ export function TodoProvider({ children }) {
       }
 
       const newTodo = await res.json();
-      console.log('New todo received:', newTodo);
-      setTodos(prev => [...prev, newTodo]);
+      const updatedTodos = [...todos, newTodo];
+      setTodos(updatedTodos);
+      await AsyncStorage.setItem('@todos', JSON.stringify(updatedTodos));
       setText('');
     } catch (error) {
       console.error('Failed to add todo:', error);
@@ -119,12 +135,19 @@ export function TodoProvider({ children }) {
     }
   };
 
-  const updateTodoText = useCallback((id, nextText, done) => {
-    setTodos(prev =>
-      prev.map(t => (t.id === id ? { ...t, text: nextText } : t))
-    );
-    saveUpdate({ id, text: nextText, done });
-  }, []);
+  const updateTodoText = useCallback(
+    async (id, nextText, done) => {
+      const updatedTodos = todos.map(t =>
+        t.id === id ? { ...t, text: nextText } : t
+      );
+      setTodos(updatedTodos);
+
+      await AsyncStorage.setItem('@todos', JSON.stringify(updatedTodos));
+
+      saveUpdate({ id, text: nextText, done });
+    },
+    [todos]
+  );
 
   const value = {
     todos,
