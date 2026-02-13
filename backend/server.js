@@ -10,7 +10,7 @@ let todos = [
   { id: 2, text: "Build a Todo App", done: false },
 ];
 
-app.get("/api/todos",(req, res) => {res.json(todos)});
+app.get("/api/todos",(_, res) => {res.json(todos)});
 
 app.post("/api/todos", (req, res) => {
   const {text, id} = req.body;
