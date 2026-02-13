@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TodoListScreen } from './screens/TodoListScreen';
 import TodoDetailsScreen from './screens/TodoDetailsScreen';
 import { TodoProvider, useTodos } from './context/TodoContext';
+import Toast from 'react-native-toast-message';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +37,7 @@ function AppContent() {
           options={{ title: 'Todo Details' }}
         />
       </Stack.Navigator>
+      <Toast />
     </NavigationContainer>
   );
 }

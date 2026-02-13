@@ -7,6 +7,7 @@ import {
 } from 'react';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const TodoContext = createContext(null);
 const debuggerHost =
@@ -80,6 +81,10 @@ export function TodoProvider({ children }) {
 
       const filteredList = todos.filter(todo => todo.id !== item.id);
       setTodos(filteredList);
+      Toast.show({
+        type: 'success',
+        text1: 'Todo removed!',
+      });
       await AsyncStorage.setItem('@todos', JSON.stringify(filteredList));
     } catch (error) {
       console.error('Failed to delete todo:', error);
@@ -114,6 +119,10 @@ export function TodoProvider({ children }) {
       const updatedTodos = [...todos, newTodo];
       setTodos(updatedTodos);
       await AsyncStorage.setItem('@todos', JSON.stringify(updatedTodos));
+      Toast.show({
+        type: 'success',
+        text1: 'Todo added!',
+      });
       setText('');
     } catch (error) {
       console.error('Failed to add todo:', error);
@@ -143,7 +152,10 @@ export function TodoProvider({ children }) {
       setTodos(updatedTodos);
 
       await AsyncStorage.setItem('@todos', JSON.stringify(updatedTodos));
-
+      Toast.show({
+        type: 'success',
+        text1: 'Todo updated!',
+      });
       saveUpdate({ id, text: nextText, done });
     },
     [todos]
