@@ -6,17 +6,11 @@ import {
   Pressable,
   FlatList,
 } from 'react-native';
+import { useTodos } from '../context/TodoContext';
 
-export const TodoListScreen = ({
-  navigation,
-  todos,
-  text,
-  setText,
-  onSubmit,
-  handleDelete,
-  handlePress,
-  onSave,
-}) => {
+export const TodoListScreen = ({ navigation }) => {
+  const { todos, text, setText, handleDelete, addTodo, toggleTodo } =
+    useTodos();
   return (
     <View style={styles.container}>
       <View style={styles.row}>
@@ -26,7 +20,7 @@ export const TodoListScreen = ({
           onChangeText={setText}
           value={text}
         />
-        <Pressable style={styles.button} onPress={onSubmit}>
+        <Pressable style={styles.button} onPress={addTodo}>
           <Text style={styles.buttonText}>Add Todo</Text>
         </Pressable>
       </View>
@@ -41,13 +35,12 @@ export const TodoListScreen = ({
               onPress={() =>
                 navigation.navigate('TodoDetails', {
                   todo: item,
-                  onSave,
                 })
               }
             >
               <Text style={styles.todoText}>{item.text}</Text>
             </Pressable>
-            <Pressable onPress={() => handlePress(item)}>
+            <Pressable onPress={() => toggleTodo(item)}>
               <Text style={styles.checkbox}>{item.done ? '✅' : '⬜️'}</Text>
             </Pressable>
 

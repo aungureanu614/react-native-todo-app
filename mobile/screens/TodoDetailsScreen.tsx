@@ -7,9 +7,11 @@ import {
   Alert,
 } from 'react-native';
 import { useEffect, useState } from 'react';
+import { useTodos } from '../context/TodoContext';
 
 export default function TodoDetailsScreen({ route, navigation }) {
-  const { todo, onSave } = route.params;
+  const { todo } = route.params;
+  const { updateTodoText } = useTodos();
 
   const [draftText, setDraftText] = useState(todo?.text ?? '');
 
@@ -23,7 +25,7 @@ export default function TodoDetailsScreen({ route, navigation }) {
       Alert.alert('Validation', 'Todo text is required');
       return;
     }
-    onSave(todo.id, next, todo.done);
+    updateTodoText(todo.id, next, todo.done);
     navigation.goBack();
   };
 
